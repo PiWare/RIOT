@@ -390,7 +390,7 @@ int i2c_read_regs(i2c_t dev, uint8_t address, uint8_t reg, char *data, int lengt
     _clear_addr(i2c);
     DEBUG("Write reg into DR\n");
     i2c->DR = reg;
-    _stop(i2c);
+// _stop(i2c);
     DEBUG("Now start a read transaction\n");
     return i2c_read_bytes(dev, address, data, length);
 }
@@ -487,10 +487,9 @@ void i2c_poweroff(i2c_t dev)
 
 static void _start(I2C_TypeDef *dev, uint8_t address, uint8_t rw_flag)
 {
-    /* wait for device to be ready */
-    DEBUG("Wait for device to be ready\n");
-
-    while (dev->SR2 & I2C_SR2_BUSY) {}
+//  /* wait for device to be ready */
+//  DEBUG("Wait for device to be ready\n");
+//  while (dev->SR2 & I2C_SR2_BUSY) {}
 
     /* generate start condition */
     DEBUG("Generate start condition\n");

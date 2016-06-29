@@ -36,11 +36,11 @@ char threadA_stack [THREAD_STACKSIZE_MAIN];
 /* thread's function */
 void *threadA_func(void *arg);
 
-struct spi
+struct i2c
 {
 	unsigned int m_dev;
 
-	spi(const unsigned int dev, const i2c_speed_t speed):
+	i2c(const unsigned int dev, const i2c_speed_t speed):
 		m_dev(dev)
 	{
 	//	int res = 
@@ -55,6 +55,11 @@ struct spi
 	size_t read(const std::uint8_t address, char *data, size_t length)
 	{
 		return i2c_read_bytes(m_dev, address, data, length);
+	}
+
+	size_t read_reg(const std::uint8_t address, const std::uint8_t reg, char *data, size_t length)
+	{
+		return i2c_read_regs(m_dev, address, reg, data, length);
 	}
 };
 
@@ -91,6 +96,7 @@ struct hts221
 		std::int16_t T1_OUT;
 	};
 
+	static const std::uint8_t I2C_ADDRESS		= 0x5F;
 	static const std::uint8_t WHO_AM_I_DEFAULT	= 0xBC;
 	static const std::uint8_t REG_MULTIPLE		= 0x80;
 	
@@ -108,16 +114,31 @@ struct hts221
 	static const std::uint8_t TEMP_OUT_L		= 0x2A;
 	static const std::uint8_t TEMP_OUT_H		= 0x2B;
 	
-	static const std::uint8_t CALIB_0			= 0x30 | REG_MULTIPLE;
+	static const std::uint8_t CALIB_0			= 0x30;	// | REG_MULTIPLE;
+	static const std::uint8_t CALIB_1			= 0x31;
+	static const std::uint8_t CALIB_2			= 0x32;
+	static const std::uint8_t CALIB_3			= 0x33;
+	static const std::uint8_t CALIB_4			= 0x34;
+	static const std::uint8_t CALIB_5			= 0x35;
+	static const std::uint8_t CALIB_6			= 0x36;
+	static const std::uint8_t CALIB_7			= 0x37;
+	static const std::uint8_t CALIB_8			= 0x38;
+	static const std::uint8_t CALIB_9			= 0x39;
+	static const std::uint8_t CALIB_A			= 0x3A;
+	static const std::uint8_t CALIB_B			= 0x3B;
+	static const std::uint8_t CALIB_C			= 0x3C;
+	static const std::uint8_t CALIB_D			= 0x3D;
+	static const std::uint8_t CALIB_E			= 0x3E;
+	static const std::uint8_t CALIB_F			= 0x3F;
 
-	spi &m_spi;
+	i2c &m_i2c;
 	const std::uint8_t m_address;
 	
 	calib_t m_calib;
 	std::uint16_t m_t0, m_t1;
 	
-	hts221(spi &spi_, const std::uint8_t address):
-		m_spi(spi_),
+	hts221(i2c &i2c_, const std::uint8_t address = I2C_ADDRESS):
+		m_i2c(i2c_),
 		m_address(address)
 	{
 	}
@@ -125,15 +146,16 @@ struct hts221
 	bool detect()
 	{
 		std::uint8_t who_am_i;
+	//	char *ptr = (char *)&m_calib;
 
-		m_spi.write(m_address, (char *)&WHO_AM_I, 1);
-		m_spi.read(m_address, (char *)&who_am_i, 1);
+		m_i2c.read_reg(m_address, WHO_AM_I, (char *)&who_am_i, 1);
 		
 		if (who_am_i != WHO_AM_I_DEFAULT)
 			return false;
 		
-		m_spi.write(m_address, (char *)&CALIB_0, 1);
-		m_spi.read(m_address, (char *)&m_calib, sizeof(calib_t));
+		printf("sizeof = %d\n", sizeof(calib_t));
+
+		m_i2c.read_reg(m_address, CALIB_0 | REG_MULTIPLE, (char *)&m_calib, sizeof(calib_t));
 
 		m_calib.H0_rH >>= 1;
 		m_calib.H1_rH >>= 1;
@@ -148,25 +170,22 @@ struct hts221
 	{
 		char buffer[2] = { AV_CONF, (char)0 };
 
-		m_spi.write(m_address, buffer, sizeof(buffer));
+		m_i2c.write(m_address, buffer, sizeof(buffer));
 	}
 	
 	void power(rate_t rate)
 	{
 		char buffer[2] = { CTRL_REG1, (char)rate };
 
-		m_spi.write(m_address, buffer, sizeof(buffer));
+		m_i2c.write(m_address, buffer, sizeof(buffer));
 	}
 	
 	std::uint16_t humidity(void)
 	{
-		const std::uint8_t reg = HUMIDITY_OUT_L | REG_MULTIPLE;
 		std::uint16_t result;
 		
-		m_spi.write(m_address, (char *)&reg, 1);
-		m_spi.read(m_address, (char *)&result, 2);
+		m_i2c.read_reg(m_address, HUMIDITY_OUT_L | REG_MULTIPLE, (char *)&result, 2);
 		
-
 		std::uint32_t tmp = ((std::uint32_t)(result - m_calib.H0_T0_OUT)) * ((uint32_t)(m_calib.H1_rH - m_calib.H0_rH) * 10);
 		result = tmp / (m_calib.H1_T0_OUT - m_calib.H0_T0_OUT) + m_calib.H0_rH * 10;
 
@@ -179,11 +198,9 @@ struct hts221
 	
 	std::int16_t temperature(void)
 	{
-		const std::uint8_t reg = TEMP_OUT_L | REG_MULTIPLE;
 		std::uint16_t result;
 		
-		m_spi.write(m_address, (char *)&reg, 1);
-		m_spi.read(m_address, (char *)&result, 2);
+		m_i2c.read_reg(m_address, TEMP_OUT_L | REG_MULTIPLE, (char *)&result, 2);
 
 		std::uint32_t tmp = ((uint32_t)(result - m_calib.T0_OUT)) * ((uint32_t)(m_t1 - m_t0) * 10);
 		result = tmp / (m_calib.T1_OUT - m_calib.T0_OUT)  + m_t0 * 10;
@@ -199,6 +216,7 @@ struct hts221
 	}
 };
 
+const std::uint8_t hts221::I2C_ADDRESS;
 const std::uint8_t hts221::WHO_AM_I_DEFAULT;
 const std::uint8_t hts221::REG_MULTIPLE;
 
@@ -217,6 +235,321 @@ const std::uint8_t hts221::TEMP_OUT_L;
 const std::uint8_t hts221::TEMP_OUT_H;
 
 const std::uint8_t hts221::CALIB_0;
+const std::uint8_t hts221::CALIB_1;
+const std::uint8_t hts221::CALIB_2;
+const std::uint8_t hts221::CALIB_3;
+const std::uint8_t hts221::CALIB_4;
+const std::uint8_t hts221::CALIB_5;
+const std::uint8_t hts221::CALIB_6;
+const std::uint8_t hts221::CALIB_7;
+const std::uint8_t hts221::CALIB_8;
+const std::uint8_t hts221::CALIB_9;
+const std::uint8_t hts221::CALIB_A;
+const std::uint8_t hts221::CALIB_B;
+const std::uint8_t hts221::CALIB_C;
+const std::uint8_t hts221::CALIB_D;
+const std::uint8_t hts221::CALIB_E;
+const std::uint8_t hts221::CALIB_F;
+
+struct lps25hb
+{
+	enum class temperature_average_t:
+		std::uint8_t
+	{
+
+	};
+
+	enum class rate_t:
+		std::uint8_t
+	{
+		off				= 0x04,
+		oneshot			= 0x84,
+		rate_1_hz		= 0x94,
+		rate_7_hz		= 0xA4,
+		rate_12_5_hz	= 0xB7,
+		rate_25_hz		= 0xC7,
+	};
+
+	struct __attribute__((__packed__)) calib_t
+	{
+	};
+
+	static const std::uint8_t I2C_ADDRESS		= 0x5D;	// 0x5C SA0 = 0
+	static const std::uint8_t WHO_AM_I_DEFAULT	= 0xBD;
+	static const std::uint8_t REG_MULTIPLE		= 0x80;
+
+	/* Registers */
+	static const std::uint8_t REF_P_XL			= 0x08;
+	static const std::uint8_t REF_P_L			= 0x09;
+	static const std::uint8_t REF_P_H			= 0x0A;
+
+	static const std::uint8_t WHO_AM_I			= 0x0F;
+	static const std::uint8_t RES_CONF			= 0x10;
+
+	static const std::uint8_t CTRL_REG1			= 0x20;
+	static const std::uint8_t CTRL_REG2			= 0x21;
+	static const std::uint8_t CTRL_REG3			= 0x22;
+	static const std::uint8_t CTRL_REG4			= 0x23;
+	static const std::uint8_t INTERRUPT_CFG		= 0x24;
+	static const std::uint8_t INT_SOURCE		= 0x25;
+
+	static const std::uint8_t STATUS_REG		= 0x27;
+	static const std::uint8_t PRESS_OUT_XL		= 0x28;
+	static const std::uint8_t PRESS_OUT_L		= 0x29;
+	static const std::uint8_t PRESS_OUT_H		= 0x2A;
+	static const std::uint8_t TEMP_OUT_L		= 0x2B;
+	static const std::uint8_t TEMP_OUT_H		= 0x2C;
+
+	i2c &m_i2c;
+	const std::uint8_t m_address;
+
+	calib_t m_calib;
+	std::uint16_t m_t0, m_t1;
+
+	lps25hb(i2c &i2c_, const std::uint8_t address = I2C_ADDRESS):
+		m_i2c(i2c_),
+		m_address(address)
+	{
+	}
+
+	bool detect()
+	{
+		std::uint8_t who_am_i;
+
+		m_i2c.write(m_address, (char *)&WHO_AM_I, 1);
+		m_i2c.read(m_address, (char *)&who_am_i, 1);
+
+		if (who_am_i != WHO_AM_I_DEFAULT)
+			return false;
+
+		return true;
+	}
+
+	void power(rate_t rate)
+	{
+		char buffer[2] = { CTRL_REG1, (char)rate };
+
+		m_i2c.write(m_address, buffer, sizeof(buffer));
+	}
+
+	std::uint32_t reference(void)
+	{
+		std::uint32_t result = 0;
+
+		m_i2c.read_reg(m_address, REF_P_XL | REG_MULTIPLE, (char *)&result, 3);
+
+		return result;
+	}
+
+	std::int16_t pressure(void)
+	{
+		std::int32_t result = 0;
+
+		m_i2c.read_reg(m_address, PRESS_OUT_XL | REG_MULTIPLE, (char *)&result, 3);
+		if (result & 0x800000)
+			result |= 0xFF000000;
+		return result >> 12;
+	}
+
+	std::int16_t temperature(void)
+	{
+		std::int16_t result;
+
+		m_i2c.read_reg(m_address, TEMP_OUT_L | REG_MULTIPLE, (char *)&result, 2);
+
+		return 42.5 + result / 480;
+	}
+};
+
+const std::uint8_t lps25hb::I2C_ADDRESS;
+const std::uint8_t lps25hb::WHO_AM_I_DEFAULT;
+const std::uint8_t lps25hb::REG_MULTIPLE;
+
+const std::uint8_t lps25hb::REF_P_XL;
+const std::uint8_t lps25hb::REF_P_L;
+const std::uint8_t lps25hb::REF_P_H;
+
+const std::uint8_t lps25hb::WHO_AM_I;
+const std::uint8_t lps25hb::RES_CONF;
+
+const std::uint8_t lps25hb::CTRL_REG1;
+const std::uint8_t lps25hb::CTRL_REG2;
+const std::uint8_t lps25hb::CTRL_REG3;
+const std::uint8_t lps25hb::CTRL_REG4;
+const std::uint8_t lps25hb::INTERRUPT_CFG;
+const std::uint8_t lps25hb::INT_SOURCE;
+
+const std::uint8_t lps25hb::STATUS_REG;
+const std::uint8_t lps25hb::PRESS_OUT_XL;
+const std::uint8_t lps25hb::PRESS_OUT_L;
+const std::uint8_t lps25hb::PRESS_OUT_H;
+const std::uint8_t lps25hb::TEMP_OUT_L;
+const std::uint8_t lps25hb::TEMP_OUT_H;
+
+struct lis3mdl
+{
+/*
+	enum class mode_t:
+		std::uint8_t
+	{
+		low_power				= 0x0,
+		medium_performance		= 0x1,
+		high_performance		= 0x2,
+		ultra_high_performance	= 0x3,
+	};
+*/
+	enum class mode_t:
+		std::uint8_t
+	{
+		continuous			= 0x0,
+		single				= 0x1,
+		power_down			= 0x3,
+	};
+
+	enum class rate_t:
+		std::uint8_t
+	{
+		rate_0_hz_625		= 0x00,
+		rate_1_hz_25		= 0x04,
+		rate_2_hz_5			= 0x08,
+		rate_5_hz			= 0x0C,
+		rate_10_hz			= 0x10,
+		rate_20_hz			= 0x14,
+		rate_40_hz			= 0x18,
+		rate_80_hz			= 0x1C,
+		rate_155_hz			= 0x02,
+		rate_300_hz			= 0x22,
+		rate_560_hz			= 0x42,
+		rate_1000_hz		= 0x62,
+	};
+
+	enum class gauss_t:
+		std::uint8_t
+	{
+		gauss_4			= 0x0,
+		gauss_8			= 0x1,
+		gauss_12		= 0x2,
+		gauss_16		= 0x3,
+	};
+
+	static const std::uint8_t I2C_ADDRESS		= 0x1E;	// 0x1C SA0 = 0
+	static const std::uint8_t WHO_AM_I_DEFAULT	= 0x3D;
+	static const std::uint8_t REG_MULTIPLE		= 0x80;
+
+	/* Registers */
+	static const std::uint8_t WHO_AM_I			= 0x0F;
+
+	static const std::uint8_t CTRL_REG1			= 0x20;
+	static const std::uint8_t CTRL_REG2			= 0x21;
+	static const std::uint8_t CTRL_REG3			= 0x22;
+	static const std::uint8_t CTRL_REG4			= 0x23;
+	static const std::uint8_t CTRL_REG5			= 0x24;
+
+	static const std::uint8_t STATUS_REG		= 0x27;
+	static const std::uint8_t OUT_X_L			= 0x28;
+	static const std::uint8_t OUT_X_H			= 0x29;
+	static const std::uint8_t OUT_Y_L			= 0x2A;
+	static const std::uint8_t OUT_Y_H			= 0x2B;
+	static const std::uint8_t OUT_Z_L			= 0x2C;
+	static const std::uint8_t OUT_Z_H			= 0x2D;
+	static const std::uint8_t TEMP_OUT_L		= 0x2E;
+	static const std::uint8_t TEMP_OUT_H		= 0x2F;
+
+	static const std::uint8_t INT_CFG			= 0x30;
+	static const std::uint8_t INT_SRC			= 0x31;
+	static const std::uint8_t INT_THS_L			= 0x32;
+	static const std::uint8_t INT_THS_H			= 0x33;
+
+	i2c &m_i2c;
+	const std::uint8_t m_address;
+
+	lis3mdl(i2c &i2c_, const std::uint8_t address = I2C_ADDRESS):
+		m_i2c(i2c_),
+		m_address(address)
+	{
+	}
+
+	bool detect()
+	{
+		std::uint8_t who_am_i;
+
+		m_i2c.read_reg(m_address, WHO_AM_I, (char *)&who_am_i, 1);
+		if (who_am_i != WHO_AM_I_DEFAULT)
+			return false;
+
+		return true;
+	}
+
+	void power(mode_t mode, rate_t rate, gauss_t gauss)
+	{
+		char buffer[6] = { CTRL_REG1 | REG_MULTIPLE, char((char)rate | (char)0x80), char((char)gauss << 5), (char)mode, char((char)rate & 0x60 >> 3), 0x40 };
+
+		m_i2c.write(m_address, buffer, sizeof(buffer));
+	}
+
+	std::int16_t axisX(void)
+	{
+		std::int16_t result;
+
+		m_i2c.read_reg(m_address, OUT_X_L | REG_MULTIPLE, (char *)&result, 2);
+
+		return result;	// / 6842
+	}
+
+	std::int16_t axisY(void)
+	{
+		std::int16_t result;
+
+		m_i2c.read_reg(m_address, OUT_Y_L | REG_MULTIPLE, (char *)&result, 2);
+
+		return result;	// / 6842
+	}
+
+	std::int16_t axisZ(void)
+	{
+		std::int16_t result;
+
+		m_i2c.read_reg(m_address, OUT_Z_L | REG_MULTIPLE, (char *)&result, 2);
+
+		return result;	// / 6842
+	}
+
+	std::int16_t temperature(void)
+	{
+		std::int16_t result;
+
+		m_i2c.read_reg(m_address, TEMP_OUT_L | REG_MULTIPLE, (char *)&result, 2);
+
+		return (result >> 3) + 25;
+	}
+};
+
+const std::uint8_t lis3mdl::I2C_ADDRESS;
+const std::uint8_t lis3mdl::WHO_AM_I_DEFAULT;
+const std::uint8_t lis3mdl::REG_MULTIPLE;
+
+const std::uint8_t lis3mdl::WHO_AM_I;
+
+const std::uint8_t lis3mdl::CTRL_REG1;
+const std::uint8_t lis3mdl::CTRL_REG2;
+const std::uint8_t lis3mdl::CTRL_REG3;
+const std::uint8_t lis3mdl::CTRL_REG4;
+const std::uint8_t lis3mdl::CTRL_REG5;
+
+const std::uint8_t lis3mdl::STATUS_REG;
+const std::uint8_t lis3mdl::OUT_X_L;
+const std::uint8_t lis3mdl::OUT_X_H;
+const std::uint8_t lis3mdl::OUT_Y_L;
+const std::uint8_t lis3mdl::OUT_Y_H;
+const std::uint8_t lis3mdl::OUT_Z_L;
+const std::uint8_t lis3mdl::OUT_Z_H;
+const std::uint8_t lis3mdl::TEMP_OUT_L;
+const std::uint8_t lis3mdl::TEMP_OUT_H;
+
+const std::uint8_t lis3mdl::INT_CFG;
+const std::uint8_t lis3mdl::INT_SRC;
+const std::uint8_t lis3mdl::INT_THS_L;
+const std::uint8_t lis3mdl::INT_THS_H;
 
 struct dma
 {
@@ -346,6 +679,9 @@ int main()
 	printf("\n************ RIOT and C++ demo program ***********\n");
 	printf("\n");
 
+	float test = 1.5f;
+	printf("Float: %f\n", test);
+
 	printf("%.8lX\n", (unsigned long int)array1);
 	printf("%.8lX\n", (unsigned long int)array2);
 
@@ -358,8 +694,8 @@ int main()
 
 	printf("%.8lX %.8lX %.8lX %.8lX\n", array2[0], array2[1], array2[2], array2[3]);
 
-	spi spi0(0, I2C_SPEED_FAST);
-	hts221 hts(spi0, 0x5F);
+	i2c i2c0(0, I2C_SPEED_FAST);
+	hts221 hts(i2c0);
 	if (hts.detect())
 	{
 		printf("HTS221 found\n");
@@ -369,29 +705,52 @@ int main()
 		printf("HTS221 not found!\n");
 	}
 
+	lps25hb lps(i2c0);
+	if (lps.detect())
+	{
+		printf("LPS25HB found\n");
+	}
+	else
+	{
+		printf("LPS25HB not found!\n");
+	}
+
+	lis3mdl lis(i2c0);
+	if (lis.detect())
+	{
+		printf("LIS3MDL found\n");
+	}
+	else
+	{
+		printf("LIS3MDL not found!\n");
+	}
+
 	hts.power(hts221::rate_t::rate_1_hz);
+	lps.power(lps25hb::rate_t::rate_1_hz);
+	lis.power(lis3mdl::mode_t::continuous, lis3mdl::rate_t::rate_5_hz, lis3mdl::gauss_t::gauss_4);
 
 	uint32_t last_wakeup = xtimer_now();
-	
-/*
-	while(1)
-	{
-		xtimer_usleep_until(&last_wakeup, INTERVAL);
-		printf("slept until %" PRIu32 "\n", xtimer_now());
-	}
-*/
-	
 	while (true)
 	{
 		printf("Humidity: %d\n", hts.humidity());
-		printf("Temperature: %d\n", hts.temperature());
-		
+		printf("Temperature: %d\n\n", hts.temperature());
+
+		printf("Reference: %ld\n", lps.reference());
+		printf("Pressure: %d mBar\n", lps.pressure());
+		printf("Temperature: %d C\n\n", lps.temperature());
+
+		printf("Axis X: %d\n", lis.axisX());
+		printf("Axis Y: %d\n", lis.axisY());
+		printf("Axis Z: %d\n", lis.axisZ());
+		printf("Temperature: %d C\n", lis.temperature());
+
 		printf("Sleep...\n");
 		xtimer_usleep_until(&last_wakeup, INTERVAL);
 		printf("Wakeup...\n");
 	}
-	
+
 	hts.power(hts221::rate_t::off);
+	lps.power(lps25hb::rate_t::off);
 
 #if 0
 	/* create thread A */
