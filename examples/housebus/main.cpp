@@ -28,7 +28,39 @@ extern "C"
 #include "xtimer.h"
 }
 
+#include <periph/pwm.h>
+#include <periph/gpio.h>
+#include <periph/periph.h>
+
+#include <driver/rgb.h>
+
 #include "cpp_class.hpp"
+
+/*
+template <std::uint8_t index_, std::uint32_t base_, std::uint8_t interrupt_, bool ahb_ = false>
+struct gpio_tag
+{
+	static constexpr std::uint8_t index = index_;
+	static constexpr std::uint32_t base = base_;
+	static constexpr std::uint8_t interrupt = interrupt_;
+	static constexpr bool ahb = ahb_;
+};
+
+typedef gpio_tag<0, 0x10000000, 1> gpio0_tag;
+typedef gpio_tag<1, 0x20000000, 2> gpio1_tag;
+
+constexpr gpio0_tag gpio0;
+constexpr gpio1_tag gpio1;
+*/
+
+template<typename T>
+void enable()
+{
+	typedef T config;
+
+	*((volatile uint32_t *)config::base) |= config::index;
+}
+
 
 /* thread's stack */
 char threadA_stack [THREAD_STACKSIZE_MAIN];
@@ -673,7 +705,15 @@ int main()
 	dma_poweron(0);
 	dma_poweron(8);
 
-	std::uint32_t array1[4] = { 0x12345678, 0xDEADBEEF, 0x11111111, 0xACACACAC };
+	periph::enable<periph::dma1>();
+	periph::enable<periph::dma2>();
+
+	periph::gpio::set<periph::gpio::PA2::usart2_tx>();
+
+//	periph::clock::get().enable(periph::clock::AHB1ENR, periph::clock::DMA1_);
+//	periph::clock::get().enable(periph::clock::AHB1ENR, periph::clock::DMA2_);
+
+	std::uint32_t array1[4] = { 0xBADEAFFE, 0xDEADBEEF, 0xFEEDBEEF, 0xDEADC0DE };
 	std::uint32_t array2[4] = { 0xAAAAAAAA, 0xBBBBBBBB, 0xCCCCCCCC, 0xDDDDDDDD };
 
 	printf("\n************ RIOT and C++ demo program ***********\n");

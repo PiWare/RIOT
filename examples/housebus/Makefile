@@ -34,6 +34,8 @@ QUIET ?= 1
 # Modules required
 USEMODULE += xtimer
 
+INCLUDES += -Iinclude
+
 # Features required
 FEATURES_REQUIRED += cpp
 FEATURES_REQUIRED += periph_timer
