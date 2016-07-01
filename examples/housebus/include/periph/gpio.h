@@ -54,9 +54,12 @@ enum class alternate_t
 template<const std::uint8_t index_, const std::uint32_t base_, const alternate_t alternate_>
 struct pin_tag
 {
+	static_assert(index_ <= 16, "Pin index out of range");
+
 	static constexpr std::uint8_t index = index_;
 	static constexpr std::uint32_t base = base_ + 0x20 + ((index & 0x08) >> 1);
-	static constexpr std::uint32_t value = std::uint32_t(alternate_);
+	static constexpr std::uint32_t value = std::uint32_t(alternate_) << ((index & 0x7) << 2);
+	static constexpr std::uint32_t mask = 0xF << ((index & 0x7) << 2);
 };
 
 namespace PA0 {
@@ -98,14 +101,29 @@ typedef pin_tag<3, gpioA::base, alternate_t::AF7> usart2_rx;
 
 }
 
+/**
+ * @brief Set alternate in function
+ */
 template<typename T>
-void set()
+void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
 {
 	typedef T config;
 
-	/* TODO: Mask */
-	*((uint32_t*)config::base) = config::value;
+	*((uint32_t*)config::base) = (*((uint32_t*)config::base) & ~(config::mask | mask)) | config::value | value;
 }
+
+template<typename T, typename Tn, typename... Args>
+void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
+{
+	typedef T config;
+	typedef Tn config_next;
+
+	static_assert(config::base == config_next::base, "Elements must have the same register address");
+
+	function<Tn, Args...>(config::value | value, config::mask | mask);
+}
+
+
 
 /*
 class gpio:

@@ -694,7 +694,61 @@ struct dma
 	}
 };
 
+#if 0
+namespace interface {
 
+class adc
+{
+	public:
+		virtual std::int32_t get() = 0;
+		virtual setReadCallback();
+};
+
+class uart
+{
+	public:
+		virtual std::int32_t read(char *buffer, char length) = 0;
+		virtual std::int32_t write() = 0;
+		virtual std::int32_t baudrate() = 0;
+};
+
+}
+
+class adc_chn:
+	public interface::adc
+{
+	virtual std::int32_t get() = 0;
+/*
+	interrupt {
+
+		clr int
+		call callback
+	}
+*/
+};
+
+class adc_ctrl
+{
+	private:
+		adc_chn m_channel[8];
+
+	public:
+		adc_ctrl():
+			m_channel[0]()
+
+		{
+
+		}
+
+		adc_chn *get(const int index) { return &m_channel[index]; }
+};
+
+
+class datalog
+{
+	add_channel(interface::adc *adc);
+};
+#endif
 
 /* set interval to 1 second */
 #define INTERVAL (1000000U)
@@ -705,13 +759,11 @@ int main()
 	dma_poweron(0);
 	dma_poweron(8);
 
-	periph::enable<periph::dma1>();
-	periph::enable<periph::dma2>();
+//	periph::reset<periph::dma1, periph::dma2>();
+	periph::enable<periph::dma1, periph::dma2>();
 
-	periph::gpio::set<periph::gpio::PA2::usart2_tx>();
+	periph::gpio::function<periph::gpio::PA2::usart2_tx, periph::gpio::PA3::usart2_rx>();
 
-//	periph::clock::get().enable(periph::clock::AHB1ENR, periph::clock::DMA1_);
-//	periph::clock::get().enable(periph::clock::AHB1ENR, periph::clock::DMA2_);
 
 	std::uint32_t array1[4] = { 0xBADEAFFE, 0xDEADBEEF, 0xFEEDBEEF, 0xDEADC0DE };
 	std::uint32_t array2[4] = { 0xAAAAAAAA, 0xBBBBBBBB, 0xCCCCCCCC, 0xDDDDDDDD };

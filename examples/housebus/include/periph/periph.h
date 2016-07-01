@@ -20,6 +20,7 @@ struct base_tag
 	static constexpr std::uint8_t index = index_;
 	static constexpr std::uint32_t base = base_;
 	static constexpr std::uint32_t bitmask = 1 << bit_;
+	static constexpr bus_t bus = bus_;
 	static constexpr std::uint32_t reset = 0x40023800 + (std::uint32_t)bus_ + 0x10;
 	static constexpr std::uint32_t clock = 0x40023800 + (std::uint32_t)bus_ + 0x30;
 	static constexpr std::uint32_t lowclock = 0x40023800 + (std::uint32_t)bus_ + 0x50;
@@ -81,30 +82,71 @@ typedef spi2 i2s2;
 typedef spi1 i2s1;
 //typedef rtc bkp;
 
-/* TODO: Express as variadic template to reset multiple units */
+
+/**
+ * @brief Reset one or multiple peripheral units
+ */
 template<typename T>
-void reset(void)
+void reset(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::reset) = config::bitmask;
+	*((uint32_t*)config::reset) = config::bitmask | bitmask;
 }
 
-
-template<typename T>
-void enable(void)
+template<typename T, typename Tn, typename... Args>
+void reset(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
+	typedef Tn config_next;
 
-	*((uint32_t*)config::clock) |= config::bitmask;
+	static_assert(config::bus == config_next::bus, "Elements must have the same bus");
+
+	reset<Tn, Args...>(config::bitmask | bitmask);
 }
 
+/**
+ * @brief Enable one or multiple peripheral units
+ */
 template<typename T>
-void disable(void)
+void enable(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::clock) &= ~config::bitmask;
+	*((uint32_t*)config::clock) |= (config::bitmask | bitmask);
+}
+
+template<typename T, typename Tn, typename... Args>
+void enable(const std::uint32_t bitmask = 0)
+{
+	typedef T config;
+	typedef Tn config_next;
+
+	static_assert(config::bus == config_next::bus, "Elements must have the same bus");
+
+	enable<Tn, Args...>(config::bitmask | bitmask);
+}
+
+/**
+ * @brief Disable one or multiple peripheral units
+ */
+template<typename T>
+void disable(const std::uint32_t bitmask = 0)
+{
+	typedef T config;
+
+	*((uint32_t*)config::clock) &= ~(config::bitmask | bitmask);
+}
+
+template<typename T, typename Tn, typename... Args>
+void disable(const std::uint32_t bitmask = 0)
+{
+	typedef T config;
+	typedef Tn config_next;
+
+	static_assert(config::bus == config_next::bus, "Elements must have the same bus");
+
+	enable<Tn, Args...>(config::bitmask | bitmask);
 }
 
 }
