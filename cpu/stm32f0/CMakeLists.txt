@@ -1,0 +1,15 @@
+set(CPU_ARCH cortex-m0)
+set(CPU_FAM stm32f0)
+set(CMAKE_SYSTEM_PROCESSOR "cortex-m0")
+
+set(additional_cpu_dir "${CMAKE_CURRENT_SOURCE_DIR}/../cortexm_common" "${CMAKE_CURRENT_SOURCE_DIR}/../stm32_common" PARENT_SCOPE)
+module(cpu SOURCES cpu.c lpm_arch.c vectors.c)
+#add_library(cpu STATIC cpu.c lpm_arch.c vectors.c )
+#target_include_directories(cpu PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_link_libraries(cpu PUBLIC cortexm_common stm32_common stm32_common_periph)
+target_compile_definitions(cpu PUBLIC "-DCPU_ARCH_CORTEX_M0")
+target_compile_options(cpu PUBLIC -mcpu=cortex-m0 -mlittle-endian -mthumb  )
+
+add_library(board_drivers periph/adc.c  periph/gpio.c  periph/rtc.c  periph/spi.c  periph/timer.c  periph/uart.c)
+target_include_directories(board_drivers PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_link_libraries(board_drivers PUBLIC cortexm_common)

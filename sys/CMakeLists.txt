@@ -1,0 +1,2 @@
+add_subdirectory(uart_stdio)
+add_subdirectory(newlib)
