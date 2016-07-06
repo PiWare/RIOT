@@ -91,7 +91,7 @@ void reset(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::reset) = config::bitmask | bitmask;
+	*((volatile uint32_t*)config::reset) = config::bitmask | bitmask;
 }
 
 template<typename T, typename Tn, typename... Args>
@@ -113,7 +113,7 @@ void enable(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::clock) |= (config::bitmask | bitmask);
+	*((volatile uint32_t*)config::clock) |= (config::bitmask | bitmask);
 }
 
 template<typename T, typename Tn, typename... Args>
@@ -135,7 +135,7 @@ void disable(const std::uint32_t bitmask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::clock) &= ~(config::bitmask | bitmask);
+	*((volatile uint32_t*)config::clock) &= ~(config::bitmask | bitmask);
 }
 
 template<typename T, typename Tn, typename... Args>

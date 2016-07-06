@@ -10,6 +10,7 @@ class gpio
 
 		virtual void set(void) = 0;
 		virtual void clear(void) = 0;
+		virtual bool get(void) const = 0;
 };
 
 }

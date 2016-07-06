@@ -8,12 +8,32 @@
 
 namespace periph { namespace gpio {
 
+enum class register_t
+{
+	mode					= 0x00,	/*!< GPIO port mode register */
+	output_type				= 0x04,	/*!< GPIO port output type register */
+	output_speed			= 0x08,	/*!< GPIO port output speed register */
+	pullup_pulldown			= 0x0C,	/*!< GPIO port pull-up/pull-down register */
+	input_data				= 0x10,	/*!< GPIO port input data register */
+	output_data				= 0x14,	/*!< GPIO port output data register */
+	bit_set_reset			= 0x18,	/*!< GPIO port bit set/reset register */
+	config_lock				= 0x1C,	/*!< GPIO port configuration lock register */
+	alternate_function_low	= 0x20,	/*!< GPIO alternate function low register */
+	alternate_function_high	= 0x24,	/*!< GPIO alternate function high register */
+};
+
 enum class mode_t
 {
-	input	= 0x0,
-	output	= 0x1,
+	input		= 0x0,
+	output		= 0x1,
 	alternate	= 0x2,
-	analog	= 0x3,
+	analog		= 0x3,
+};
+
+enum class driver_t
+{
+	push_pull	= 0x0,
+	open_drain	= 0x1,
 };
 
 enum class speed_t
@@ -51,6 +71,12 @@ enum class alternate_t
 	AF15	= 0xf,
 };
 
+/*
+	mode_t::analog, pull_t::none
+	speed_t nur bei mode_t::alternate und mode_t::output
+
+*/
+
 template<const std::uint8_t index_, const std::uint32_t base_, const alternate_t alternate_>
 struct pin_tag
 {
@@ -64,20 +90,24 @@ struct pin_tag
 
 namespace PA0 {
 
-typedef pin_tag<0, gpioA::base, alternate_t::AF1> tim2_ch1;
-typedef pin_tag<0, gpioA::base, alternate_t::AF1> tim2_etr;
-typedef pin_tag<0, gpioA::base, alternate_t::AF2> tim5_ch1;
-typedef pin_tag<0, gpioA::base, alternate_t::AF7> usart2_cts;
+typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_ch1;
+typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_etr;
+typedef pin_tag<0, gpioA::base, alternate_t::AF2, mode_t::alternate> tim5_ch1;
+typedef pin_tag<0, gpioA::base, alternate_t::AF7, mode_t::alternate> usart2_cts;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch0;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::output, pull_t::none> output;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::input, pull_t::none> input;
 
 }
 
 namespace PA1 {
 
-typedef pin_tag<1, gpioA::base, alternate_t::AF1> tim2_ch2;
-typedef pin_tag<1, gpioA::base, alternate_t::AF2> tim5_ch2;
-typedef pin_tag<1, gpioA::base, alternate_t::AF5> spi4_mosi;
-typedef pin_tag<1, gpioA::base, alternate_t::AF5> i2s4_sd;
-typedef pin_tag<1, gpioA::base, alternate_t::AF7> usart2_rts;
+typedef pin_tag<1, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_ch2;
+typedef pin_tag<1, gpioA::base, alternate_t::AF2, mode_t::alternate> tim5_ch2;
+typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate> spi4_mosi;
+typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate> i2s4_sd;
+typedef pin_tag<1, gpioA::base, alternate_t::AF7, mode_t::alternate> usart2_rts;
+typedef pin_tag<1, gpioA::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch1;
 
 }
 
@@ -372,10 +402,23 @@ typedef pin_tag<15, gpioB::base, alternate_t::AF12> sdio_ck;
 
 }
 
+namespace PC0 {
+
+typedef pin_tag<0, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch10;
+
+}
+
+namespace PC1 {
+
+typedef pin_tag<1, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch11;
+
+}
+
 namespace PC2 {
 
 typedef pin_tag<2, gpioC::base, alternate_t::AF5> spi2_miso;
 typedef pin_tag<2, gpioC::base, alternate_t::AF6> i2s2ext_sd;
+typedef pin_tag<2, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch12;
 
 }
 
@@ -383,6 +426,7 @@ namespace PC3 {
 
 typedef pin_tag<3, gpioC::base, alternate_t::AF5> spi2_mosi;
 typedef pin_tag<3, gpioC::base, alternate_t::AF5> i2s2_sd;
+typedef pin_tag<3, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch13;
 
 }
 
@@ -641,7 +685,11 @@ void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
 {
 	typedef T config;
 
-	*((uint32_t*)config::base) = (*((uint32_t*)config::base) & ~(config::mask | mask)) | config::value | value;
+	/* Little speed up if nothing to be masked */
+	if (mask == 0xFFFFFFFF)
+		*((volatile uint32_t*)config::base) = config::value | value;
+	else
+		*((volatile uint32_t*)config::base) = (*((uint32_t*)config::base) & ~(config::mask | mask)) | config::value | value;
 }
 
 template<typename T, typename Tn, typename... Args>
@@ -651,30 +699,44 @@ void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
 	typedef Tn config_next;
 
 	static_assert(config::base == config_next::base, "Elements must have the same register address");
+	static_assert(config::index != config_next::index, "Can not set the same pin two times");
 
 	function<Tn, Args...>(config::value | value, config::mask | mask);
 }
 
 
-
-/*
 class gpio:
 	public interface::gpio
 {
-	public:
-		gpio();
+	private:
+		const std::uint32_t m_base;
+		const std::uint16_t m_mask;
 
-		virtual void set(void)
+	public:
+		gpio(const std::uint32_t base, const std::uint8_t index):
+			m_base(base),
+			m_mask(1 << index)
 		{
+			static_assert(index < 16, "GPIO index out of range");
 
 		}
 
-		virtual void clear(void)
+		virtual void set(void) const
 		{
+			*((volatile std::uint32_t*)config::base + register_t::bit_set_reset) = m_mask;
+		}
 
+		virtual void clear(void) const
+		{
+			*((volatile std::uint32_t*)config::base + register_t::bit_set_reset) = static_cast<std::uint32_t>(m_mask) << 16;
+		}
+
+		virtual bool get() const
+		{
+			return *((volatile std::uint16_t*)config::base + register_t::input_data) & m_mask;
 		}
 };
-*/
+
 } }
 
 #endif
