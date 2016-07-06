@@ -9,6 +9,8 @@ module(cpu SOURCES cpu.c lpm_arch.c vectors.c)
 target_link_libraries(cpu PUBLIC cortexm_common stm32_common stm32_common_periph)
 target_compile_definitions(cpu PUBLIC "-DCPU_ARCH_CORTEX_M0")
 target_compile_options(cpu PUBLIC -mcpu=cortex-m0 -mlittle-endian -mthumb  )
+get_property(APPLICATION_LINK_FLAGS TARGET cpu PROPERTY APPLICATION_LINK_FLAGS )
+set_property(TARGET cpu PROPERTY APPLICATION_LINK_FLAGS "-L${CMAKE_CURRENT_SOURCE_DIR}/ldscripts -T${CMAKE_CURRENT_SOURCE_DIR}/ldscripts/${CPU_MODEL}.ld -Wl,--fatal-warnings ${APPLICATION_LINK_FLAGS}")
 
 add_library(board_drivers periph/adc.c  periph/gpio.c  periph/rtc.c  periph/spi.c  periph/timer.c  periph/uart.c)
 target_include_directories(board_drivers PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)

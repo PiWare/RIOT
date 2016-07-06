@@ -24,3 +24,20 @@ function(module name )
         target_link_libraries( ${name} PRIVATE board)
     endif()
 endfunction()
+
+function(application name)
+    set(options )
+    set(oneValueArgs )
+    set(multiValueArgs SOURCES REQUIRES)
+
+    cmake_parse_arguments(app "${options}" "${oneValueArgs}"
+                          "${multiValueArgs}" ${ARGN} )
+
+    add_executable( ${name} ${app_SOURCES})
+    target_link_libraries(${name} PUBLIC ${app_REQUIRES})
+    get_property(libraries TARGET ${name} PROPERTY INTERFACE_LINK_LIBRARIES)
+    message(STATUS "Lib: ${libraries}")
+    foreach( lib IN LISTS libraries)
+        message(STATUS "Lib: ${lib}")
+    endforeach()
+endfunction()
