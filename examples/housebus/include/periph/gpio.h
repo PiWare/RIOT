@@ -698,6 +698,7 @@ void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
 	typedef T config;
 	typedef Tn config_next;
 
+	/* FIXME: Allow to set all pins of one port! */
 	static_assert(config::base == config_next::base, "Elements must have the same register address");
 	static_assert(config::index != config_next::index, "Can not set the same pin two times");
 

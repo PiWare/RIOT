@@ -72,55 +72,96 @@ enum class event_t
 	exti11		= 15,
 };
 
-template<const std::uint8_t index_>
+template<const std::uint8_t index_, const std::uint32_t base_>
 struct channel_tag
 {
 	static_assert(index_ <= 18, "Channel index out of range");
 
 	static constexpr std::uint8_t index = index_;
+	static constexpr std::uint32_t base = base_;
 };
 
-typedef channel_tag<0> adc_in0;
-typedef channel_tag<1> adc_in1;
-typedef channel_tag<2> adc_in2;
-typedef channel_tag<3> adc_in3;
-typedef channel_tag<4> adc_in4;
-typedef channel_tag<5> adc_in5;
-typedef channel_tag<6> adc_in6;
-typedef channel_tag<7> adc_in7;
-typedef channel_tag<8> adc_in8;
-typedef channel_tag<9> adc_in9;
-typedef channel_tag<10> adc_in10;
-typedef channel_tag<11> adc_in11;
-typedef channel_tag<12> adc_in12;
-typedef channel_tag<13> adc_in13;
-typedef channel_tag<14> adc_in14;
-typedef channel_tag<15> adc_in15;
-typedef channel_tag<16> adc_temp;
-typedef channel_tag<17> adc_reference;
-typedef channel_tag<18> adc_battery;
+/* FIXME: Get base address from somewhere else! */
+typedef channel_tag<0, 0x12345678> adc_in0;
+typedef channel_tag<1, 0x12345678> adc_in1;
+typedef channel_tag<2, 0x12345678> adc_in2;
+typedef channel_tag<3, 0x12345678> adc_in3;
+typedef channel_tag<4, 0x12345678> adc_in4;
+typedef channel_tag<5, 0x12345678> adc_in5;
+typedef channel_tag<6, 0x12345678> adc_in6;
+typedef channel_tag<7, 0x12345678> adc_in7;
+typedef channel_tag<8, 0x12345678> adc_in8;
+typedef channel_tag<9, 0x12345678> adc_in9;
+typedef channel_tag<10, 0x12345678> adc_in10;
+typedef channel_tag<11, 0x12345678> adc_in11;
+typedef channel_tag<12, 0x12345678> adc_in12;
+typedef channel_tag<13, 0x12345678> adc_in13;
+typedef channel_tag<14, 0x12345678> adc_in14;
+typedef channel_tag<15, 0x12345678> adc_in15;
+typedef channel_tag<16, 0x12345678> adc_temp;
+typedef channel_tag<17, 0x12345678> adc_reference;
+typedef channel_tag<18, 0x12345678> adc_battery;
 
 /**
- * @brief Set alternate in function
+ * @brief Program ADC sequencer
  */
 template<typename T>
-void sequence(const std::uint8_t index = 0, const std::uint32_t value = 0, const std::uint32_t mask = 0)
+void sequence(const std::uint8_t index = 0, const std::uint32_t value_low = 0, const std::uint32_t value_mid = 0, const std::uint32_t value_high = 0)
 {
 	typedef T config;
 
-	*((volatile uint32_t*)config::base) = config::value | value;
+	const int pos = index % 6;
+//	const int offset = index / 6;
+
+	/* TODO: Can not be constantly optimized by compiler! */
+	if (index < 6)
+	{
+		*((volatile uint32_t*)config::base + 0x00) = value_low;
+		*((volatile uint32_t*)config::base + 0x04) = value_mid;
+		*((volatile uint32_t*)config::base + 0x08) = value_high | (config::index << pos);
+	}
+	else
+	if (index == 1)
+	{
+		*((volatile uint32_t*)config::base + 0x00) = value_low;
+		*((volatile uint32_t*)config::base + 0x04) = value_mid | (config::index << pos);
+		*((volatile uint32_t*)config::base + 0x08) = value_high;
+	}
+	else
+	if (index == 2)
+	{
+		*((volatile uint32_t*)config::base + 0x00) = value_low | (config::index << pos);
+		*((volatile uint32_t*)config::base + 0x04) = value_mid;
+		*((volatile uint32_t*)config::base + 0x08) = value_high;
+	}
 }
 
 template<typename T, typename Tn, typename... Args>
-void sequence(const std::uint8_t index = 0, const std::uint32_t value = 0, const std::uint32_t mask = 0)
+void sequence(const std::uint8_t index = 0, const std::uint32_t value_low = 0, const std::uint32_t value_mid = 0, const std::uint32_t value_high = 0)
 {
 	typedef T config;
-	typedef Tn config_next;
 
-	static_assert(config::base == config_next::base, "Elements must have the same register address");
-	static_assert(config::index != config_next::index, "Can not set the same pin two times");
+//	static_assert(config::base == config_next::base, "Elements must have the same register address");
+//	static_assert(config::index != config_next::index, "Can not set the same pin two times");
 
-	function<Tn, Args...>(index, config::value | value, config::mask | mask);
+	const int pos = index % 6;
+//	const int offset = index / 6;
+
+	/* TODO: Can not be constantly optimized by compiler! */
+	if (index == 0)
+	{
+		sequence<Tn, Args...>(index + 1, value_low, value_mid, value_high | (config::index << pos));
+	}
+	else
+	if (index == 1)
+	{
+		sequence<Tn, Args...>(index + 1, value_low, value_mid | (config::index << pos), value_high);
+	}
+	else
+	if (index == 2)
+	{
+		sequence<Tn, Args...>(index + 1, value_low | (config::index << pos), value_mid, value_high);
+	}
 }
 
 }
