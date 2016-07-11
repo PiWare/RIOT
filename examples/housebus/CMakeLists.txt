@@ -38,6 +38,8 @@ set(HEADER
 
 set(SOURCE
 	test/test.cpp
+
+	src/driver/i2c/pcal6408.cpp
 )
 
 include_directories("include")

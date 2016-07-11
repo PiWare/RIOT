@@ -31,7 +31,7 @@ if __name__ == "__main__":
                                 print prefix+str(i - 1)+"> "+part+";"
 
                     if first:
-                        print("\n}\n")
+                        print "\n}\n"
                         first = 0
 
     except Exception as e:

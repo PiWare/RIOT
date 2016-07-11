@@ -1,6 +1,7 @@
 #ifndef INTERFACE_SPI_H
 #define INTERFACE_SPI_H
 
+#include <cstddef>
 #include <cstdint>
 
 
