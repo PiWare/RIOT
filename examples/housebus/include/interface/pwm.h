@@ -6,7 +6,7 @@ namespace interface {
 class pwm
 {
 	public:
-		virtual void set(const std::uint8_t value) = 0;
+		virtual void set(const std::uint16_t value) = 0;
 };
 
 }

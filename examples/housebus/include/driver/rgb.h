@@ -11,19 +11,30 @@ namespace driver { namespace led {
 
 struct linear
 {
-	std::uint8_t operator()(const std::uint8_t value) const { return value; }
+	int operator()(const int value) const
+	{
+		return value;
+	}
+
+//	std::uint8_t operator()(const std::uint8_t value) const { return value; }
 };
 
 struct logarithmic
 {
-	std::uint8_t operator()(const std::uint8_t value) const { return (value * value) >> 8; }
+	int operator()(const int value) const
+	{
+		return (value * value) >> 8;
+	}
+
+//	std::uint8_t operator()(const std::uint8_t value) const { return (value * value) >> 8; }
 };
 
-template<typename T, typename func = linear()>
+template<typename T, typename func = linear>
 class rgb
 {
 	private:
 		T &m_red, &m_green, &m_blue;
+		func m_function;
 
 	public:
 		rgb(T &red, T &green, T &blue):
@@ -35,9 +46,9 @@ class rgb
 
 		void set(const std::uint8_t red, const std::uint8_t green, const std::uint8_t blue)
 		{
-			m_red.set(func(red));
-			m_green.set(func(green));
-			m_blue.set(func(blue));
+			m_red.set(m_function(red));
+			m_green.set(m_function(green));
+			m_blue.set(m_function(blue));
 		}
 
 		void set(const std::uint32_t value)
