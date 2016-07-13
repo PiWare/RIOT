@@ -25,6 +25,7 @@ set(HEADER
 	include/periph/i2c.h
 	include/periph/periph.h
 	include/periph/pwm.h
+	include/periph/rtc.h
 	include/periph/spi.h
 
 	include/dummy/adc.h
@@ -33,6 +34,7 @@ set(HEADER
 	include/dummy/i2c.h
 	include/dummy/periph.h
 	include/dummy/pwm.h
+	include/dummy/rtc.h
 	include/dummy/spi.h
 )
 

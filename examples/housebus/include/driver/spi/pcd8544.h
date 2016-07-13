@@ -9,10 +9,10 @@
 namespace driver { namespace spi {
 
 class pcd8544:
-	public interface::display
+	public interface::display	// <monochrome>
 {
 	protected:
-		static const std::uint8_t FUNCTION	= 0x20;
+		static const std::uint8_t FUNCTION				= 0x20;
 
 		/* H = 0 */
 		static const std::uint8_t DISPLAY_CONTROL		= 0x08;	/*!< Set display configuration */
@@ -51,7 +51,10 @@ class pcd8544:
 			return m_power;
 		}
 
-		virtual void draw(const bool value) = 0;
+		virtual void draw(const bool value)
+		{
+
+		}
 };
 
 } }

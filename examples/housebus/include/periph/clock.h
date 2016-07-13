@@ -1,10 +1,97 @@
 #ifndef PERIPH_CLOCK_H
 #define PERIPH_CLOCK_H
 
+#include <iostream>
+#include <iomanip>
 
-namespace periph { namespace clock {
 
+namespace periph {
 
+enum class source_t
+{
+	internal	= 0,
+	external	= 1,
+};
+
+template<unsigned int frequency_, source_t source_ = source_t::external>
+struct clock_tag
+{
+	static constexpr unsigned int frequency = frequency_;
+	static constexpr source_t source = source_;
+	static constexpr unsigned int M = 0;
+	static constexpr unsigned int N = 0;
+};
+
+typedef clock_tag<16000000, source_t::internal> HSI16;
+typedef clock_tag< 4000000, source_t::external> HSE4;
+typedef clock_tag< 8000000, source_t::external> HSE8;
+typedef clock_tag<16000000, source_t::external> HSE16;
+
+class clock
+{
+	private:
+		static const std::uint32_t BASE	= 0x40023800;
+
+		static const std::uint32_t CR			= 0x00;	/*!< Clock control register */
+		static const std::uint32_t PLLCFGR		= 0x04;	/*!< PLL configuration register */
+		static const std::uint32_t CFGR			= 0x08;	/*!< Clock configuration register */
+		static const std::uint32_t CIR			= 0x0C;	/*!< Clock interrupt register */
+
+		static const std::uint32_t BDCR			= 0x70;	/*!< Backup domain control register */
+		static const std::uint32_t CSR			= 0x74;	/*!< Clock control & status register */
+		static const std::uint32_t SSCGR		= 0x80;	/*!< Spread spectrum clock generation register */
+		static const std::uint32_t PLLI2SCFGR	= 0x84;	/*!< PLL I2S configuration register */
+
+	public:
+		template<typename C, unsigned int M, unsigned int N, unsigned int P, unsigned int Q>
+		static void pll()
+		{
+			typedef C config;
+
+			static_assert((M >= 2) && (M <= 63), "Valid values for M: 2 <= M <= 63");
+			static_assert((N >= 50) && (N <= 432), "Valid values for N: 50 <= N <= 432");
+			static_assert((P == 2) || (P == 4) || (P == 6) || (P == 8), "Valid values for P: 2, 4, 6, 8");
+			static_assert((Q >= 2) && (Q <= 15), "Valid values for Q: 2 <= Q <= 15");
+
+			constexpr unsigned int VCO_IN = config::frequency / M;
+			constexpr unsigned int VCO_OUT = VCO_IN * N;
+			static_assert((VCO_IN >= 1000000) && (VCO_IN <= 2000000), "VCO_IN must be between 1MHz and 2MHz");
+			static_assert((VCO_OUT >= 100000000) && (VCO_OUT <= 432000000), "VCO_OUT must be between 100MHz and 432MHz");
+
+			constexpr unsigned int PLL_P = VCO_OUT / P;
+			constexpr unsigned int PLL_Q = VCO_OUT / Q;
+			static_assert(PLL_P <= 100000000, "PLL_P must not exeed 100MHz");
+			static_assert(PLL_Q <= 50000000, "PLL_Q must not exeed 50MHz");
+
+			std::uint32_t value = M | N << 6 | ((P >> 1) - 1) << 16 | Q << 24 | (unsigned int)config::source << 22;
+			std::cout << std::hex << std::setfill('0') << "0x" << std::setw(8) << value << std::endl;
+
+		//	*((volatile std::uint32_t *)BASE + PLLCFGR) = value;
+		}
+
+		template<typename C, unsigned int M, unsigned int N, unsigned int R>
+		static void pll_i2s()
+		{
+			typedef C config;
+
+			static_assert((M >= 2) && (M <= 63), "Valid values for M: 2 <= M <= 63");
+			static_assert((N >= 50) && (N <= 432), "Valid values for N: 50 <= N <= 432");
+			static_assert((R >= 2) && (R <= 7), "Valid values for R: 2 <= R <= 7");
+
+			constexpr unsigned int VCO_IN = config::frequency / M;
+			constexpr unsigned int VCO_OUT = VCO_IN * N;
+			static_assert((VCO_IN >= 1000000) && (VCO_IN <= 2000000), "VCO_IN must be between 1MHz and 2MHz");
+			static_assert((VCO_OUT >= 100000000) && (VCO_OUT <= 432000000), "VCO_OUT must be between 100MHz and 432MHz");
+
+			constexpr unsigned int PLL_R = VCO_OUT / R;
+			static_assert(PLL_R <= 192000000, "PLL_R must not exeed 192MHz");
+
+			std::uint32_t value = M | N << 6 | R << 28;
+			std::cout << std::hex << std::setfill('0') << "0x" << std::setw(8) << value << std::endl;
+
+		//	*((volatile std::uint32_t *)BASE + PLLI2SCFGR) = value;
+		}
+};
 
 #if 0
 class clock
@@ -108,6 +195,6 @@ class clock
 };
 #endif
 
-} }
+}
 
 #endif
