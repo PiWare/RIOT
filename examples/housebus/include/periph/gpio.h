@@ -22,6 +22,17 @@ enum class register_t
 	alternate_function_high	= 0x24,	/*!< GPIO alternate function high register */
 };
 
+static constexpr std::uint32_t MODER	= 0x00;
+static constexpr std::uint32_t OTYPER	= 0x04;
+static constexpr std::uint32_t OSPEEDR	= 0x08;
+static constexpr std::uint32_t PUPDR	= 0x0C;
+static constexpr std::uint32_t IDR		= 0x10;
+static constexpr std::uint32_t ODR		= 0x14;
+static constexpr std::uint32_t BSSRR	= 0x18;
+static constexpr std::uint32_t LOCKR	= 0x1C;
+static constexpr std::uint32_t AFRL		= 0x20;
+static constexpr std::uint32_t AFRH		= 0x24;
+
 enum class alternate_t
 {
 	AF0		= 0x0,
@@ -422,13 +433,13 @@ typedef pin_tag<15, gpioB::base, alternate_t::AF12> sdio_ck;
 
 namespace PC0 {
 
-typedef pin_tag<0, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch10;
+typedef pin_tag<0, gpioC::base, alternate_t::AF0, mode_t::analog> adc1_ch10;
 
 }
 
 namespace PC1 {
 
-typedef pin_tag<1, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch11;
+typedef pin_tag<1, gpioC::base, alternate_t::AF0, mode_t::analog> adc1_ch11;
 
 }
 
@@ -436,7 +447,7 @@ namespace PC2 {
 
 typedef pin_tag<2, gpioC::base, alternate_t::AF5> spi2_miso;
 typedef pin_tag<2, gpioC::base, alternate_t::AF6> i2s2ext_sd;
-typedef pin_tag<2, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch12;
+typedef pin_tag<2, gpioC::base, alternate_t::AF0, mode_t::analog> adc1_ch12;
 
 }
 
@@ -444,7 +455,7 @@ namespace PC3 {
 
 typedef pin_tag<3, gpioC::base, alternate_t::AF5> spi2_mosi;
 typedef pin_tag<3, gpioC::base, alternate_t::AF5> i2s2_sd;
-typedef pin_tag<3, gpioC::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch13;
+typedef pin_tag<3, gpioC::base, alternate_t::AF0, mode_t::analog> adc1_ch13;
 
 }
 

@@ -1,12 +1,12 @@
-#ifndef PERIPH_GPIO_H
-#define PERIPH_GPIO_H
+#ifndef DUMMY_GPIO_H
+#define DUMMY_GPIO_H
 
 #include <interface/gpio.h>
 
 #include <periph/periph.h>
 
 
-namespace periph { namespace gpio {
+namespace dummy { namespace gpio {
 
 class gpio:
 	public interface::gpio

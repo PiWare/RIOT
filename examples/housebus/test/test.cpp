@@ -3,6 +3,7 @@
 #include <dummy/spi.h>
 
 #include <periph/periph.h>
+#include <periph/gpio.h>
 #include <periph/clock.h>
 
 #include <driver/rgb.h>
@@ -15,9 +16,13 @@ int main(int, char**)
 
 	periph::clock::pll<periph::HSI16, 16, 200, 2, 4>();
 
-	function<PA0::output, PA1::adc1_ch1, PA2::usart2_tx, PA3::usart2_rx>();
+//	int i = 4;
+//	typedef periph::base_tag< 7, (std::uint32_t)&i, 7, periph::bus_t::ahb1> gpioX;
+//	periph::enable<periph::gpioA, periph::gpioB, gpioX>();
 
-	gpio<PA0::output> gp;
+	periph::gpio::function<periph::gpio::PA0::output, periph::gpio::PA1::adc1_ch1, periph::gpio::PA2::usart2_tx, periph::gpio::PA3::usart2_rx>();
+
+	periph::gpio::gpio<periph::gpio::PA0::output> gp;
 	gp.set(true);
 
 	bool val = gp.get();
