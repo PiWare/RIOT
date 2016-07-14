@@ -30,7 +30,7 @@ extern "C" {
 /**
  * @brief Use the 2nd UART for STDIO on this board
  */
-#define UART_STDIO_DEV      UART_DEV(1)
+#define UART_STDIO_DEV      UART_DEV(0)
 
 /**
  * @name xtimer configuration

@@ -1,5 +1,4 @@
-get_property(APPLICATION_OBJECTS TARGET cpu PROPERTY APPLICATION_OBJECTS)
-add_executable(hello-world main.c ${APPLICATION_OBJECTS})
+add_executable(hello-world main.c )
 target_link_libraries(hello-world cpu board_drivers)
-get_property(APPLICATION_LINK_FLAGS TARGET cpu PROPERTY APPLICATION_LINK_FLAGS)
-set_property(TARGET hello-world APPEND PROPERTY LINK_FLAGS ${APPLICATION_LINK_FLAGS} )
+board_flash_command(hello-world)
+add_custom_command(TARGET hello-world POST_BUILD COMMAND arm-none-eabi-objcopy -O ihex $<TARGET_FILE:hello-world> ${CMAKE_CURRENT_BINARY_DIR}/hello-world.hex)

@@ -12,7 +12,5 @@ add_library(core STATIC
     sched.c
     thread.c
     thread_flags.c)
-
-target_include_directories(core PUBLIC include)
-target_link_libraries(core PRIVATE board)
+target_link_libraries(core PUBLIC cpu)
 target_compile_options(core PUBLIC "-std=c11")

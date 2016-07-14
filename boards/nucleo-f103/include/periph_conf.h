@@ -29,8 +29,8 @@ extern "C" {
  * @name Clock system configuration
  * @{
  */
-#define CLOCK_HSE           (8000000U)              /* external oscillator */
-#define CLOCK_CORECLOCK     (72000000U)             /* desired core clock frequency */
+#define CLOCK_HSI           (8000000U)              /* external oscillator */
+#define CLOCK_CORECLOCK     (36000000U)             /* desired core clock frequency */
 
 /* the actual PLL values are automatically generated */
 #define CLOCK_PLL_DIV       (1)
@@ -39,10 +39,10 @@ extern "C" {
 /* AHB, APB1, APB2 dividers */
 #define CLOCK_AHB_DIV       RCC_CFGR_HPRE_DIV1
 #define CLOCK_APB2_DIV      RCC_CFGR_PPRE2_DIV1
-#define CLOCK_APB1_DIV      RCC_CFGR_PPRE1_DIV2    /* max 36 MHz (!) */
+#define CLOCK_APB1_DIV      RCC_CFGR_PPRE1_DIV1    /* max 36 MHz (!) */
 
 /* resulting bus clocks */
-#define CLOCK_APB1          (CLOCK_CORECLOCK / 2)
+#define CLOCK_APB1          (CLOCK_CORECLOCK)
 #define CLOCK_APB2          (CLOCK_CORECLOCK)
 
 /* Flash latency */

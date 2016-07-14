@@ -1,0 +1,16 @@
+set(CPU_ARCH cortex-m4)
+set(CPU_FAM nrf52)
+set(CMAKE_SYSTEM_PROCESSOR "cortex-m4")
+set(CPU_FLAGS -mcpu=${CPU_ARCH} -mlittle-endian -mthumb -mfloat-abi=soft -mno-thumb-interwork)
+
+add_library(cpu STATIC cpu.c lpm_arch.c vectors.c include/cpu_conf.h)
+target_link_libraries(cpu PUBLIC cortexm_common nrf5x_common_periph)
+target_link_libraries(cpu PRIVATE core)
+target_link_libraries(cpu INTERFACE ${CPU_FLAGS} -L${CMAKE_CURRENT_SOURCE_DIR}/ldscripts -T${CMAKE_CURRENT_SOURCE_DIR}/ldscripts/${CPU_MODEL}.ld -Wl,--fatal-warnings -uinterrupt_vector)
+target_compile_definitions(cpu PUBLIC "-DCPU_ARCH_CORTEX_M4" -DMODULE_NEWLIB)
+target_compile_options(cpu PUBLIC ${CPU_FLAGS} )
+target_include_directories(cpu PUBLIC include  ${CMAKE_CURRENT_SOURCE_DIR}/../cortexm_common/include ${CMAKE_CURRENT_SOURCE_DIR}/../nrf5x_common/include)
+
+add_library(board_drivers periph/rtt.c  periph/spi.c)
+target_include_directories(board_drivers PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> $<INSTALL_INTERFACE:include>)
+target_link_libraries(board_drivers PUBLIC cortexm_common)

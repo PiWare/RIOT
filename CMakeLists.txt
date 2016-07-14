@@ -20,23 +20,26 @@ execute_process(
   OUTPUT_VARIABLE GIT_COMMIT_HASH
   OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-
+#Set the current RIOT version from the GIT version
 add_definitions(-DRIOT_VERSION="${GIT_COMMIT_HASH}-${GIT_BRANCH}")
 
+# add the main interface include directories needed throughout the project
 include_directories(
     drivers/include
-    sys/include)
+    sys/include
+    core/include)
+
 #for now just set the board here
+#set(BOARD stm32f0discovery)
+set(BOARD nucleo-f103)
+#set(BOARD nrf52dk)
 
-set(BOARD stm32f0discovery)
-
+# include the board specified
 add_subdirectory(boards/${BOARD})
-add_subdirectory(cpu/${CPU})
-
-foreach(additional_dir IN LISTS additional_cpu_dir)
-add_subdirectory(${additional_dir})
-endforeach()
-
+# next comes the cpu support
+add_subdirectory(cpu)
+# the core and system libraries
 add_subdirectory(core)
 add_subdirectory(sys)
+# last the applications
 add_subdirectory(examples)
