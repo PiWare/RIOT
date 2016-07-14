@@ -22,35 +22,6 @@ enum class register_t
 	alternate_function_high	= 0x24,	/*!< GPIO alternate function high register */
 };
 
-enum class mode_t
-{
-	input		= 0x0,
-	output		= 0x1,
-	alternate	= 0x2,
-	analog		= 0x3,
-};
-
-enum class driver_t
-{
-	push_pull	= 0x0,
-	open_drain	= 0x1,
-};
-
-enum class speed_t
-{
-	low		= 0x0,
-	medium	= 0x1,
-	fast	= 0x2,
-	high	= 0x3,
-};
-
-enum class pull_t
-{
-	none	= 0x0,
-	up		= 0x1,
-	down	= 0x2,
-};
-
 enum class alternate_t
 {
 	AF0		= 0x0,
@@ -71,73 +42,120 @@ enum class alternate_t
 	AF15	= 0xf,
 };
 
-/*
-	mode_t::analog, pull_t::none
-	speed_t nur bei mode_t::alternate und mode_t::output
+enum class mode_t
+{
+	input		= 0,
+	output		= 1,
+	alternate	= 2,
+	analog		= 3,
+};
 
-*/
+enum class driver_t
+{
+	unused		= -1,
+	push_pull	= 0,
+	open_drain	= 1,
+};
 
-template<const std::uint8_t index_, const std::uint32_t base_, const alternate_t alternate_>
+enum class speed_t
+{
+	unused	= -1,
+	low		= 0,
+	medium	= 1,
+	fast	= 2,
+	high	= 3,
+};
+
+enum class pull_t
+{
+	none	= 0,
+	up		= 1,
+	down	= 2,
+};
+
+template<const std::uint8_t index_, const std::uint32_t base_, const alternate_t alternate_, const mode_t mode_ = mode_t::alternate, const driver_t driver_ = driver_t::unused, const speed_t speed_ = speed_t::unused, const pull_t pull_ = pull_t::none>
 struct pin_tag
 {
-	static_assert(index_ <= 16, "Pin index out of range");
+	static_assert(index_ < 16, "Pin index out of range");
+
+	static_assert((((mode_== mode_t::alternate) || (mode_ == mode_t::output)) && (driver_ != driver_t::unused)) ||
+		(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (driver_ == driver_t::unused)), "mode_t::alternate and mode_t::output pin need to define a driver, mode_t::analog and mode_t::input don't!");
+
+	static_assert((((mode_== mode_t::alternate) || (mode_ == mode_t::output)) && (speed_ != speed_t::unused)) ||
+		(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (speed_ == speed_t::unused)), "mode_t::alternate and mode_t::output pin need to define a speed, mode_t::analog and mode_t::input don't!");
+
+	static_assert(((mode_ == mode_t::analog) && (pull_ == pull_t::none)) || (mode_ != mode_t::analog), "Analog pin can not have a pull resistor!");
 
 	static constexpr std::uint8_t index = index_;
-	static constexpr std::uint32_t base = base_ + 0x20 + ((index & 0x08) >> 1);
-	static constexpr std::uint32_t value = std::uint32_t(alternate_) << ((index & 0x7) << 2);
-	static constexpr std::uint32_t mask = 0xF << ((index & 0x7) << 2);
+	static constexpr std::uint32_t base = base_;
+	static constexpr mode_t mode = mode_;
+
+	static constexpr std::uint32_t value = std::uint32_t(alternate_) << ((index_ & 0x7) << 2);
+	static constexpr std::uint32_t mask = 0xF << ((index_ & 0x7) << 2);
+
+	static constexpr std::uint32_t mode_value = std::uint32_t(mode_) << (index_ * 2);
+	static constexpr std::uint32_t mode_mask = 0x3 << (index_ * 2);
+
+	static constexpr std::uint32_t driver_value = driver_ == driver_t::unused ? 0 : std::uint32_t(driver_) << index_;
+	static constexpr std::uint32_t driver_mask = driver_ == driver_t::unused ? 0 : 0x1 << index_;
+
+	static constexpr std::uint32_t speed_value = speed_ == speed_t::unused ? 0 : std::uint32_t(speed_) << (index_ * 2);
+	static constexpr std::uint32_t speed_mask = speed_ == speed_t::unused ? 0 : 0x3 << (index_ * 2);
+
+	static constexpr std::uint32_t pull_value = std::uint32_t(pull_) << (index_ * 2);
+	static constexpr std::uint32_t pull_mask = 0x3 << (index_ * 2);
 };
 
 namespace PA0 {
 
-typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_ch1;
-typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_etr;
-typedef pin_tag<0, gpioA::base, alternate_t::AF2, mode_t::alternate> tim5_ch1;
-typedef pin_tag<0, gpioA::base, alternate_t::AF7, mode_t::alternate> usart2_cts;
-typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch0;
-typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::output, pull_t::none> output;
-typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::input, pull_t::none> input;
+typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate, driver_t::push_pull> tim2_ch1;
+typedef pin_tag<0, gpioA::base, alternate_t::AF1, mode_t::alternate, driver_t::push_pull> tim2_etr;
+typedef pin_tag<0, gpioA::base, alternate_t::AF2, mode_t::alternate, driver_t::push_pull> tim5_ch1;
+typedef pin_tag<0, gpioA::base, alternate_t::AF7, mode_t::alternate, driver_t::push_pull> usart2_cts;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::analog> adc1_ch0;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::output, driver_t::push_pull, speed_t::low> output;
+typedef pin_tag<0, gpioA::base, alternate_t::AF0, mode_t::input> input;
 
 }
 
 namespace PA1 {
 
-typedef pin_tag<1, gpioA::base, alternate_t::AF1, mode_t::alternate> tim2_ch2;
-typedef pin_tag<1, gpioA::base, alternate_t::AF2, mode_t::alternate> tim5_ch2;
-typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate> spi4_mosi;
-typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate> i2s4_sd;
-typedef pin_tag<1, gpioA::base, alternate_t::AF7, mode_t::alternate> usart2_rts;
-typedef pin_tag<1, gpioA::base, alternate_t::AF0, mode_t::analog, pull_t::none> adc1_ch1;
+typedef pin_tag<1, gpioA::base, alternate_t::AF1, mode_t::alternate, driver_t::push_pull> tim2_ch2;
+typedef pin_tag<1, gpioA::base, alternate_t::AF2, mode_t::alternate, driver_t::push_pull> tim5_ch2;
+typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate, driver_t::push_pull> spi4_mosi;
+typedef pin_tag<1, gpioA::base, alternate_t::AF5, mode_t::alternate, driver_t::push_pull> i2s4_sd;
+typedef pin_tag<1, gpioA::base, alternate_t::AF7, mode_t::alternate, driver_t::push_pull> usart2_rts;
+typedef pin_tag<1, gpioA::base, alternate_t::AF0, mode_t::analog> adc1_ch1;
 
 }
 
 namespace PA2 {
 
-typedef pin_tag<2, gpioA::base, alternate_t::AF1> tim2_ch3;
-typedef pin_tag<2, gpioA::base, alternate_t::AF2> tim5_ch3;
-typedef pin_tag<2, gpioA::base, alternate_t::AF3> tim9_ch1;
-typedef pin_tag<2, gpioA::base, alternate_t::AF5> i2s2_ckin;
-typedef pin_tag<2, gpioA::base, alternate_t::AF7> usart2_tx;
+typedef pin_tag<2, gpioA::base, alternate_t::AF1, mode_t::alternate, driver_t::push_pull> tim2_ch3;
+typedef pin_tag<2, gpioA::base, alternate_t::AF2, mode_t::alternate, driver_t::push_pull> tim5_ch3;
+typedef pin_tag<2, gpioA::base, alternate_t::AF3, mode_t::alternate, driver_t::push_pull> tim9_ch1;
+typedef pin_tag<2, gpioA::base, alternate_t::AF5, mode_t::alternate, driver_t::push_pull> i2s2_ckin;
+typedef pin_tag<2, gpioA::base, alternate_t::AF7, mode_t::alternate, driver_t::push_pull, speed_t::fast> usart2_tx;
 
 }
 
 namespace PA3 {
 
-typedef pin_tag<3, gpioA::base, alternate_t::AF1> tim2_ch4;
-typedef pin_tag<3, gpioA::base, alternate_t::AF2> tim5_ch4;
-typedef pin_tag<3, gpioA::base, alternate_t::AF3> tim9_ch2;
-typedef pin_tag<3, gpioA::base, alternate_t::AF5> i2s2_mck;
-typedef pin_tag<3, gpioA::base, alternate_t::AF7> usart2_rx;
+typedef pin_tag<3, gpioA::base, alternate_t::AF1, mode_t::alternate, driver_t::push_pull> tim2_ch4;
+typedef pin_tag<3, gpioA::base, alternate_t::AF2, mode_t::alternate, driver_t::push_pull> tim5_ch4;
+typedef pin_tag<3, gpioA::base, alternate_t::AF3, mode_t::alternate, driver_t::push_pull> tim9_ch2;
+typedef pin_tag<3, gpioA::base, alternate_t::AF5, mode_t::alternate, driver_t::push_pull> i2s2_mck;
+typedef pin_tag<3, gpioA::base, alternate_t::AF7, mode_t::alternate, driver_t::push_pull, speed_t::fast> usart2_rx;
 
 }
 
 namespace PA4 {
 
-typedef pin_tag<4, gpioA::base, alternate_t::AF5> spi1_nss;
-typedef pin_tag<4, gpioA::base, alternate_t::AF5> i2s1_ws;
-typedef pin_tag<4, gpioA::base, alternate_t::AF6> spi3_nss;
-typedef pin_tag<4, gpioA::base, alternate_t::AF6> i2s3_ws;
-typedef pin_tag<4, gpioA::base, alternate_t::AF7> usart2_ck;
+typedef pin_tag<4, gpioA::base, alternate_t::AF5, mode_t::alternate> spi1_nss;
+typedef pin_tag<4, gpioA::base, alternate_t::AF5, mode_t::alternate> i2s1_ws;
+typedef pin_tag<4, gpioA::base, alternate_t::AF6, mode_t::alternate> spi3_nss;
+typedef pin_tag<4, gpioA::base, alternate_t::AF6, mode_t::alternate> i2s3_ws;
+typedef pin_tag<4, gpioA::base, alternate_t::AF7, mode_t::alternate> usart2_ck;
 
 }
 
@@ -681,60 +699,94 @@ typedef pin_tag<15, gpioE::base, alternate_t::AF1> tim1_bkin;
  * @brief Set alternate in function
  */
 template<typename T>
-void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
+void function(const std::uint32_t value_low = 0, const std::uint32_t mask_low = 0,const std::uint32_t value_high = 0, const std::uint32_t mask_high = 0, const std::uint32_t mode_value = 0, const std::uint32_t mode_mask = 0, const std::uint32_t driver_value = 0, const std::uint32_t driver_mask = 0, const std::uint32_t speed_value = 0, const std::uint32_t speed_mask = 0, const std::uint32_t pull_value = 0, const std::uint32_t pull_mask = 0)
 {
 	typedef T config;
 
-	/* Little speed up if nothing to be masked */
-	if (mask == 0xFFFFFFFF)
-		*((volatile uint32_t*)config::base) = config::value | value;
+	*((volatile uint32_t*)(config::base + MODER)) = (*((uint32_t*)(config::base + MODER)) & ~(config::mode_mask | mode_mask)) | config::mode_value | mode_value;
+	if (config::driver_mask | driver_mask)
+	{
+		*((volatile uint32_t*)(config::base + OTYPER)) = (*((uint32_t*)(config::base + OTYPER)) & ~(config::driver_mask | driver_mask)) | config::driver_value | driver_value;
+	}
+
+	if (config::speed_mask | speed_mask)
+	{
+		*((volatile uint32_t*)(config::base + OSPEEDR)) = (*((uint32_t*)(config::base + OSPEEDR)) & ~(config::speed_mask | speed_mask)) | config::speed_value | speed_value;
+	}
+
+	*((volatile uint32_t*)(config::base + PUPDR)) = (*((uint32_t*)(config::base + PUPDR)) & ~(config::pull_mask | pull_mask)) | config::pull_value | pull_value;
+
+	if (config::index < 8)
+	{
+		if (config::mask | mask_low)
+		{
+			*((volatile uint32_t*)(config::base + AFRL)) = (*((uint32_t*)(config::base + AFRL)) & ~(config::mask | mask_low)) | config::value | value_low;
+		}
+
+		if (mask_high)
+		{
+			*((volatile uint32_t*)(config::base + AFRH)) = (*((uint32_t*)(config::base + AFRH)) & ~mask_high) | value_high;
+		}
+	}
 	else
-		*((volatile uint32_t*)config::base) = (*((uint32_t*)config::base) & ~(config::mask | mask)) | config::value | value;
+	{
+		if (mask_low)
+		{
+			*((volatile uint32_t*)(config::base + AFRL)) = (*((uint32_t*)(config::base + AFRL)) & ~mask_low) | value_low;
+		}
+
+		if (config::mask | mask_high)
+		{
+			*((volatile uint32_t*)(config::base + AFRH)) = (*((uint32_t*)(config::base + AFRH)) & ~(config::mask | mask_high)) | config::value | value_high;
+		}
+	}
 }
 
 template<typename T, typename Tn, typename... Args>
-void function(const std::uint32_t value = 0, const std::uint32_t mask = 0)
+void function(const std::uint32_t value_low = 0, const std::uint32_t mask_low = 0, const std::uint32_t value_high = 0, const std::uint32_t mask_high = 0, const std::uint32_t mode_value = 0, const std::uint32_t mode_mask = 0, const std::uint32_t driver_value = 0, const std::uint32_t driver_mask = 0, const std::uint32_t speed_value = 0, const std::uint32_t speed_mask = 0, const std::uint32_t pull_value = 0, const std::uint32_t pull_mask = 0)
 {
 	typedef T config;
 	typedef Tn config_next;
 
-	/* FIXME: Allow to set all pins of one port! */
-	static_assert(config::base == config_next::base, "Elements must have the same register address");
+	static_assert(config::base == config_next::base, "Elements must have the same base port");
 	static_assert(config::index != config_next::index, "Can not set the same pin two times");
 
-	function<Tn, Args...>(config::value | value, config::mask | mask);
+	if (config::mode == mode_t::alternate)
+	{
+		if (config::index < 8)
+			function<Tn, Args...>(config::value | value_low, config::mask | mask_low, value_high, mask_high, config::mode_value | mode_value, config::mode_mask | mode_mask, config::driver_value | driver_value, config::driver_mask | driver_mask, config::speed_value | speed_value, config::speed_mask | speed_mask, config::pull_value | pull_value, config::pull_mask | pull_mask);
+		else
+			function<Tn, Args...>(value_low, mask_low, config::value | value_high, config::mask | mask_high, config::mode_value | mode_value, config::mode_mask | mode_mask, config::driver_value | driver_value, config::driver_mask | driver_mask, config::speed_value | speed_value, config::speed_mask | speed_mask, config::pull_value | pull_value, config::pull_mask | pull_mask);
+	}
+	else
+		function<Tn, Args...>(value_low, mask_low, value_high, mask_high, config::mode_value | mode_value, config::mode_mask | mode_mask, config::driver_value | driver_value, config::driver_mask | driver_mask, config::speed_value | speed_value, config::speed_mask | speed_mask, config::pull_value | pull_value, config::pull_mask | pull_mask);
 }
 
-
+template<typename T>
 class gpio:
 	public interface::gpio
 {
 	private:
-		const std::uint32_t m_base;
-		const std::uint16_t m_mask;
+		typedef T config;
 
 	public:
-		gpio(const std::uint32_t base, const std::uint8_t index):
-			m_base(base),
-			m_mask(1 << index)
+		gpio()
 		{
-			static_assert(index < 16, "GPIO index out of range");
-
+			static_assert(config::index < 16, "GPIO index out of range");
+			static_assert((config::mode == mode_t::output) || (config::mode == mode_t::input), "Pin is no output nor input");
 		}
 
-		virtual void set(void) const
+		virtual void set(const bool value)
 		{
-			*((volatile std::uint32_t*)config::base + register_t::bit_set_reset) = m_mask;
-		}
-
-		virtual void clear(void) const
-		{
-			*((volatile std::uint32_t*)config::base + register_t::bit_set_reset) = static_cast<std::uint32_t>(m_mask) << 16;
+			if (value)
+				*((volatile std::uint32_t*)(config::base + BSSRR)) = (1 << config::index);
+			else
+				*((volatile std::uint32_t*)(config::base + BSSRR)) = static_cast<std::uint32_t>(1 << (config::index + 16));
 		}
 
 		virtual bool get() const
 		{
-			return *((volatile std::uint16_t*)config::base + register_t::input_data) & m_mask;
+			return *((volatile std::uint16_t*)(config::base + IDR)) & (1 << config::index);
 		}
 };
 

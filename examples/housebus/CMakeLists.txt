@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 project(lib_test CXX)
 
-set(CMAKE_CXX_FLAGS "-std=c++11") # -Wall")
+set(CMAKE_CXX_FLAGS "-std=c++11 -O1") # -Wall")
 
 set(HEADER
 	include/type/color.h

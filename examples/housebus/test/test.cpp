@@ -15,6 +15,15 @@ int main(int, char**)
 
 	periph::clock::pll<periph::HSI16, 16, 200, 2, 4>();
 
+	function<PA0::output, PA1::adc1_ch1, PA2::usart2_tx, PA3::usart2_rx>();
+
+	gpio<PA0::output> gp;
+	gp.set(true);
+
+	bool val = gp.get();
+	gp.set(val);
+
+
 	dummy::spi spi1(1);
 	dummy::i2c i2c1(1);
 
