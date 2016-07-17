@@ -14,13 +14,15 @@ enum class bus_t
 	apb2	= 0x14,
 };
 
-template<const std::uint8_t index_, const std::uint32_t base_, const std::uint8_t bit_, const bus_t bus_>
+template<const std::uint8_t index_, const std::uint32_t base_, const std::uint8_t bit_, const bus_t bus_, const std::uint8_t interrupt_>
 struct base_tag
 {
 	static constexpr std::uint8_t index = index_;
 	static constexpr std::uint32_t base = base_;
 	static constexpr std::uint32_t bitmask = 1 << bit_;
 	static constexpr bus_t bus = bus_;
+    static constexpr std::uint8_t interrupt = interrupt_;
+
 	static constexpr std::uint32_t reset = 0x40023800 + (std::uint32_t)bus_ + 0x10;
 	static constexpr std::uint32_t clock = 0x40023800 + (std::uint32_t)bus_ + 0x30;
 	static constexpr std::uint32_t lowclock = 0x40023800 + (std::uint32_t)bus_ + 0x50;
