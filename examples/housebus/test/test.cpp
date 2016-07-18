@@ -5,6 +5,7 @@
 #include <periph/periph.h>
 #include <periph/gpio.h>
 #include <periph/clock.h>
+#include <periph/nvic.h>
 
 #include <driver/rgb.h>
 #include <driver/i2c/pcal6408.h>
@@ -15,6 +16,8 @@ int main(int, char**)
 //	periph::enable<periph::gpioA, periph::gpioB>();
 
 	periph::clock::pll<periph::HSI16, 16, 200, 2, 4>();
+
+	periph::nvic::enable<periph::nvic::usart1_tag, periph::nvic::usart2_tag>();
 
 //	int i = 4;
 //	typedef periph::base_tag< 7, (std::uint32_t)&i, 7, periph::bus_t::ahb1> gpioX;
