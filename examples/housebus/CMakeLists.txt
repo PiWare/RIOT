@@ -23,11 +23,12 @@ set(HEADER
 	include/periph/clock.h
 	include/periph/gpio.h
 	include/periph/i2c.h
-        include/periph/nvic.h
+	include/periph/nvic.h
 	include/periph/periph.h
 	include/periph/pwm.h
 	include/periph/rtc.h
 	include/periph/spi.h
+	include/periph/usart.h
 
 	include/dummy/adc.h
 	include/dummy/clock.h

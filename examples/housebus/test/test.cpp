@@ -6,6 +6,7 @@
 #include <periph/gpio.h>
 #include <periph/clock.h>
 #include <periph/nvic.h>
+#include <periph/usart.h>
 
 #include <driver/rgb.h>
 #include <driver/i2c/pcal6408.h>
@@ -31,6 +32,9 @@ int main(int, char**)
 	bool val = gp.get();
 	gp.set(val);
 
+	periph::uart<periph::usart1> uart1;
+	uart1.baudrate(2400);
+//	periph::usart::lin_t lin = periph::usart::lin_t::disable;
 
 	dummy::spi spi1(1);
 	dummy::i2c i2c1(1);

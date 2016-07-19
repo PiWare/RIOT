@@ -90,10 +90,10 @@ struct pin_tag
 	static_assert(index_ < 16, "Pin index out of range");
 
 	static_assert((((mode_== mode_t::alternate) || (mode_ == mode_t::output)) && (driver_ != driver_t::unused)) ||
-		(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (driver_ == driver_t::unused)), "mode_t::alternate and mode_t::output pin need to define a driver, mode_t::analog and mode_t::input don't!");
+				(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (driver_ == driver_t::unused)), "mode_t::alternate and mode_t::output pin need to define a driver, mode_t::analog and mode_t::input don't!");
 
 	static_assert((((mode_== mode_t::alternate) || (mode_ == mode_t::output)) && (speed_ != speed_t::unused)) ||
-		(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (speed_ == speed_t::unused)), "mode_t::alternate and mode_t::output pin need to define a speed, mode_t::analog and mode_t::input don't!");
+				(((mode_== mode_t::input) || (mode_ == mode_t::analog)) && (speed_ == speed_t::unused)), "mode_t::alternate and mode_t::output pin need to define a speed, mode_t::analog and mode_t::input don't!");
 
 	static_assert(((mode_ == mode_t::analog) && (pull_ == pull_t::none)) || (mode_ != mode_t::analog), "Analog pin can not have a pull resistor!");
 
