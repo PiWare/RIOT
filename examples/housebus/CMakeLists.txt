@@ -5,7 +5,16 @@ set(CMAKE_CXX_FLAGS "-std=c++11 -O1") # -Wall")
 
 set(HEADER
 	include/type/color.h
+	include/type/class.h
 	include/type/direction.h
+
+	include/common/oscillator.h
+#	include/common/pll.h
+	include/common/clock.h
+
+	include/cpu/cortex/m4.h
+
+	include/processor/stm32f411.h
 
 	include/interface/display.h
 	include/interface/gpio.h
@@ -14,10 +23,6 @@ set(HEADER
 	include/interface/output.h
 	include/interface/pwm.h
 	include/interface/spi.h
-
-	include/driver/rgb.h
-	include/driver/i2c/pcal6408.h
-	include/driver/spi/pcd8544.h
 
 	include/periph/adc.h
 	include/periph/clock.h
@@ -38,6 +43,12 @@ set(HEADER
 	include/dummy/pwm.h
 	include/dummy/rtc.h
 	include/dummy/spi.h
+
+	include/driver/rgb.h
+	include/driver/i2c/pcal6408.h
+	include/driver/spi/pcd8544.h
+
+	include/board/nucleo/f411.h
 )
 
 set(SOURCE

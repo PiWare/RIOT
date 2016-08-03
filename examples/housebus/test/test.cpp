@@ -8,6 +8,8 @@
 #include <periph/nvic.h>
 #include <periph/usart.h>
 
+#include <board/nucleo/f411.h>
+
 #include <driver/rgb.h>
 #include <driver/i2c/pcal6408.h>
 #include <driver/spi/pcd8544.h>
